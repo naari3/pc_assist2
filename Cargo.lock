@@ -19,9 +19,15 @@ dependencies = [
 name = "pc_assist"
 version = "0.1.0"
 dependencies = [
+ "pcf",
  "process-memory",
  "winapi",
 ]
+
+[[package]]
+name = "pcf"
+version = "0.1.0"
+source = "git+https://github.com/MinusKelvin/pcf?rev=b6e846c70c898ffd1d51d578724c471f7b598fef#b6e846c70c898ffd1d51d578724c471f7b598fef"
 
 [[package]]
 name = "process-memory"
