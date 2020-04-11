@@ -1,5 +1,6 @@
 extern crate pcf;
 
+#[derive(Clone, Debug)]
 pub struct Board {
     pub columns: Vec<Vec<i32>>,
     pub current_piece: Option<u32>,
