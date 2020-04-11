@@ -1,12 +1,14 @@
 extern crate pcf;
 extern crate process_memory;
 use board::Board;
+use ppt::Ppt;
 use std::sync::mpsc::{channel, Sender};
 
 #[cfg(windows)]
 extern crate winapi;
 
 mod board;
+mod ppt;
 
 #[cfg(not(windows))]
 fn main() {
@@ -60,6 +62,14 @@ pub fn get_pid(process_name: &str) -> process_memory::Pid {
 
 fn run(send: Sender<Board>) {
     use process_memory::*;
+    use std::collections::HashSet;
+
+    let process_handler: ProcessHandle = get_pid("puyopuyotetris.exe")
+        .try_into_process_handle()
+        .unwrap();
+    let ppt = Ppt {
+        process_handle: process_handler,
+    };
 
     let mut board = Board {
         columns: vec![],
@@ -67,69 +77,78 @@ fn run(send: Sender<Board>) {
         hold: None,
         next_pieces: vec![],
     };
+    let mut mino_set: HashSet<u32> = vec![].into_iter().collect();
+    let mut preview_next_pieces: Vec<u32> = vec![];
+    let mut put_count = 0;
 
-    let process_handler: ProcessHandle = get_pid("puyopuyotetris.exe").try_into_process_handle().unwrap();
+    let mut can_prediction = ppt.get_current_piece().is_none();
+    let mut need_reset = can_prediction;
+    let mut resetted = !need_reset;
 
     loop {
-        let current_piece_address = DataMember::<i32>::new_offset(
-            process_handler,
-            vec![0x140461B20, 0x378, 0x40, 0x140, 0x110],
-        );
-        let current_piece = current_piece_address.read().ok().and_then(|i| {
-            if i == -1 {
-                return None;
-            } else {
-                return Some(i as u32);
-            }
-        });
-
+        let current_piece = ppt.get_current_piece();
+        if current_piece.is_none() && !need_reset && !resetted {
+            can_prediction = true;
+            need_reset = true;
+        }
+        if current_piece.is_none() && need_reset && !resetted {
+            let next_pieces = match ppt.get_next_pieces() {
+                Ok(i) => i,
+                Err(_e) => continue,
+            };
+            mino_set = vec![0, 1, 2, 3, 4, 5, 6]
+                .into_iter()
+                .collect::<HashSet<_>>()
+                .difference(&next_pieces.clone().into_iter().collect())
+                .into_iter()
+                .copied()
+                .collect();
+            put_count = 0;
+            preview_next_pieces = next_pieces.clone();
+            resetted = true;
+            need_reset = false;
+        }
+        if mino_set.is_empty() {
+            mino_set = vec![0, 1, 2, 3, 4, 5, 6].into_iter().collect();
+        }
         if current_piece == board.current_piece {
             continue;
         }
 
+        resetted = false;
         board.current_piece = current_piece;
-        let board_address = DataMember::<u32>::new_offset(
-            process_handler,
-            vec![0x140461B20, 0x378, 0xC0, 0x10, 0x3C0, 0x18],
-        );
-        let mut columns_addresses = DataMember::<[u64; 10]>::new(process_handler);
-        columns_addresses.set_offset(vec![match board_address.read() {
-            Ok(v) => v,
-            Err(_e) => continue,
-        } as usize]);
-        let column_addrs = match columns_addresses.read() {
+
+        board.columns = match ppt.get_columns() {
             Ok(v) => v,
             Err(_e) => continue,
         };
 
-        let mut columns: Vec<Vec<i32>> = Vec::new();
-        for column_addr in column_addrs.iter() {
-            let mut pieces = DataMember::<[i32; 40]>::new(process_handler);
-            pieces.set_offset(vec![*column_addr as usize]);
-            columns.push(match pieces.read() {
-                Ok(v) => v.to_vec(),
-                Err(e) => panic!(e),
-            });
-        }
-        board.columns = columns.clone();
+        let mut next_pieces = ppt.get_next_pieces().unwrap();
+        if can_prediction {
+            if next_pieces != preview_next_pieces {
+                put_count += 1;
+                match next_pieces.last() {
+                    Some(i) => {
+                        mino_set.retain(|&j| j != *i);
+                    }
+                    None => {}
+                }
+            }
+            preview_next_pieces = preview_next_pieces;
 
-        let queue_address = DataMember::<[u32; 5]>::new_offset(
-            process_handler,
-            vec![0x140461B20, 0x378, 0xB8, 0x15C],
-        );
-        let queue = match queue_address.read() {
-            Ok(v) => v,
-            Err(_e) => continue,
+            if mino_set.len() == 1 {
+                for i in mino_set.iter() {
+                    next_pieces.push(*i);
+                }
+            }
         }
-        .to_vec();
-        board.next_pieces = queue.clone();
+        board.next_pieces = next_pieces.clone();
 
-        let hold_address =
-            DataMember::<u32>::new_offset(process_handler, vec![0x140598A20, 0x38, 0x3D0, 0x8]);
-        let hold = hold_address.read().ok();
-        board.hold = hold;
+        board.hold = ppt.get_hold().ok();
 
         send.send(board.clone()).ok();
+
+        println!("");
     }
 }
 
