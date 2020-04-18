@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 process-memory = "0.3.0"
 winapi = { version = "0.3", features = ["tlhelp32"] }
-pcf = { git = "https://github.com/MinusKelvin/pcf", rev = "b6e846c70c898ffd1d51d578724c471f7b598fef" }
+pcf = { git = "https://github.com/MinusKelvin/pcf", rev = "12337b018d416e23d9d696ba9f9cb9187016b6fd" }

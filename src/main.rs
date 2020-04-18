@@ -156,34 +156,29 @@ fn run(send: Sender<Board>) {
 fn main() -> std::io::Result<()> {
     use std::thread;
 
-    let mut solns: Vec<Vec<pcf::Placement>>;
-    let mut prev_solns: Vec<Vec<pcf::Placement>> = vec![];
+    let mut prev_soln: Vec<pcf::Placement> = vec![];
 
-    let (send, recv) = channel();
+    let (board_send, board_recv) = channel();
 
-    thread::spawn(move || run(send));
+    thread::spawn(move || run(board_send));
 
     loop {
-        let board = recv.recv().unwrap();
-        solns = pcf::solve_pc(
+        let board = board_recv.recv().unwrap();
+        pcf::solve_pc(
             &board.get_queue(),
             board.get_bitboard(),
             true,
             true,
-            pcf::placeability::always,
-        );
-        if solns != prev_solns {
-            println!("changed!");
-            prev_solns = solns.clone();
-            if prev_solns.is_empty() {
-                println!("Nothing!")
-            } else {
-                for soln in solns {
+            pcf::placeability::simple_srs_spins,
+            |soln| {
+                let soln_vec = soln.clone().to_vec();
+                if soln_vec != prev_soln {
+                    prev_soln = soln_vec;
                     println!("PC: {:?}", soln);
                 }
-            }
-            println!("");
-        }
+                pcf::SearchStatus::Continue
+            },
+        );
     }
 
     Ok(())
