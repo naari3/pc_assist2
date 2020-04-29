@@ -63,6 +63,7 @@ pub fn get_pid(process_name: &str) -> process_memory::Pid {
 fn run(send: Sender<Board>) {
     use process_memory::*;
     use std::collections::HashSet;
+    use std::iter::FromIterator;
 
     let process_handler: ProcessHandle = get_pid("puyopuyotetris.exe")
         .try_into_process_handle()
@@ -77,7 +78,7 @@ fn run(send: Sender<Board>) {
         hold: None,
         next_pieces: vec![],
     };
-    let mut mino_set: HashSet<u32> = vec![].into_iter().collect();
+    let mut mino_set = HashSet::<u32>::new();
     let mut preview_next_pieces: Vec<u32> = vec![];
     let mut put_count = 0;
 
@@ -96,20 +97,19 @@ fn run(send: Sender<Board>) {
                 Ok(i) => i,
                 Err(_e) => continue,
             };
-            mino_set = vec![0, 1, 2, 3, 4, 5, 6]
-                .into_iter()
-                .collect::<HashSet<_>>()
-                .difference(&next_pieces.clone().into_iter().collect())
-                .into_iter()
-                .copied()
-                .collect();
+            mino_set = HashSet::<_>::from_iter(
+                HashSet::<_>::from_iter(vec![0, 1, 2, 3, 4, 5, 6].into_iter())
+                    .difference(&HashSet::<_>::from_iter(next_pieces.clone().into_iter()))
+                    .into_iter()
+                    .copied(),
+            );
             put_count = 0;
             preview_next_pieces = next_pieces.clone();
             resetted = true;
             need_reset = false;
         }
         if mino_set.is_empty() {
-            mino_set = vec![0, 1, 2, 3, 4, 5, 6].into_iter().collect();
+            mino_set = HashSet::<_>::from_iter(vec![0, 1, 2, 3, 4, 5, 6].into_iter());
         }
         if current_piece == board.current_piece {
             continue;
