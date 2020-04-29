@@ -2,13 +2,14 @@ extern crate pcf;
 extern crate process_memory;
 use board::Board;
 use ppt::Ppt;
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 #[cfg(windows)]
 extern crate winapi;
 
 mod board;
 mod ppt;
+mod window;
 
 #[cfg(not(windows))]
 fn main() {
@@ -152,14 +153,39 @@ fn run(send: Sender<Board>) {
     }
 }
 
+fn run_window(recv: Receiver<&'static str>) {
+    use game_util::prelude::*;
+    use glutin::*;
+
+    let mut events = EventsLoop::new();
+    let (context, lsize) = game_util::create_context(
+        WindowBuilder::new()
+            .with_transparency(true)
+            .with_always_on_top(true)
+            .with_dimensions(glutin::dpi::LogicalSize::new(1280.0, 720.0))
+            .with_resizable(false),
+        0,
+        true,
+        &mut events,
+    );
+
+    let mut game = window::Game::new(context, lsize, recv);
+    game_util::gameloop(&mut events, &mut game, 60.0, true);
+}
+
+include!(concat!(env!("OUT_DIR"), "/sprites.rs"));
+
 #[cfg(windows)]
 fn main() -> std::io::Result<()> {
     use std::thread;
 
     let mut prev_soln: Vec<pcf::Placement> = vec![];
 
+    let (window_send, window_recv) = channel();
+
     let (board_send, board_recv) = channel();
 
+    thread::spawn(move || run_window(window_recv));
     thread::spawn(move || run(board_send));
 
     loop {
