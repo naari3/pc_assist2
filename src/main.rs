@@ -1,5 +1,6 @@
 extern crate pcf;
 extern crate process_memory;
+use crate::plan::{Cells, PlanPlacement};
 use board::Board;
 use ppt::Ppt;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -9,6 +10,7 @@ use std::sync::Arc;
 extern crate winapi;
 
 mod board;
+mod plan;
 mod ppt;
 mod window;
 
@@ -154,7 +156,7 @@ fn run(send: Sender<Board>) {
     }
 }
 
-fn run_window(recv: Receiver<Arc<String>>) {
+fn run_window(recv: Receiver<Arc<Option<Cells>>>) {
     use game_util::prelude::*;
     use glutin::*;
 
@@ -163,7 +165,7 @@ fn run_window(recv: Receiver<Arc<String>>) {
         WindowBuilder::new()
             .with_transparency(true)
             .with_always_on_top(true)
-            .with_dimensions(glutin::dpi::LogicalSize::new(1280.0, 720.0))
+            .with_dimensions(glutin::dpi::LogicalSize::new(1159.0, 622.0))
             .with_resizable(true),
         0,
         true,
@@ -191,7 +193,7 @@ fn main() -> std::io::Result<()> {
 
     loop {
         let board = board_recv.recv().unwrap();
-        let s = Arc::new(format!("{:?}", "None").clone());
+        let s = Arc::new(None);
         window_send.send(Arc::clone(&s)).unwrap();
         pcf::solve_pc(
             &board.get_queue(),
@@ -204,7 +206,7 @@ fn main() -> std::io::Result<()> {
                 if soln_vec != prev_soln {
                     prev_soln = soln_vec;
                     println!("PC: {:?}", soln);
-                    let s = Arc::new(format!("{:?}", soln).clone());
+                    let s = Arc::new(Some(soln[0].cells().clone()));
                     window_send.send(Arc::clone(&s)).unwrap();
                 }
                 pcf::SearchStatus::Abort

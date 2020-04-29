@@ -1,3 +1,4 @@
+use crate::plan::Cells;
 use game_util::prelude::*;
 use game_util::GameloopCommand;
 use glutin::*;
@@ -13,15 +14,15 @@ pub struct Game {
     text: game_util::TextRenderer,
     sprite_batch: game_util::SpriteBatch,
     sprites: sprites::Sprites,
-    recv: Receiver<Arc<String>>,
-    soln: Arc<String>,
+    recv: Receiver<Arc<Option<Cells>>>,
+    cells: Arc<Option<Cells>>,
 }
 
 impl Game {
     pub fn new(
         context: WindowedContext<PossiblyCurrent>,
         lsize: dpi::LogicalSize,
-        recv: Receiver<Arc<String>>,
+        recv: Receiver<Arc<Option<Cells>>>,
     ) -> Game {
         let (sprites, sprite_sheet) = sprites::Sprites::load();
         Game {
@@ -48,7 +49,7 @@ impl Game {
             },
             sprites: sprites,
             recv: recv,
-            soln: Arc::new(String::from("test")),
+            cells: Arc::new(None),
         }
     }
 }
@@ -64,7 +65,7 @@ impl game_util::Game for Game {
         //     .window()
         //     .set_position(dpi::LogicalPosition::new(100.0, 100.0));
         if let Some(s) = self.recv.try_recv().ok() {
-            self.soln = s;
+            self.cells = s;
         }
         GameloopCommand::Continue
     }
@@ -74,48 +75,25 @@ impl game_util::Game for Game {
         self.text.dpi = dpi as f32;
         self.text.screen_size = (self.lsize.width as f32, self.lsize.height as f32);
 
-        // self.text.draw_text(
-        //     &format!(
-        //         "FPS: {:.1}\nDrift: {:.3}\nAlpha: {:.1}\nDPI: {:.1}",
-        //         1.0 / smooth_delta,
-        //         self.drift,
-        //         alpha,
-        //         dpi
-        //     ),
-        //     15.0,
-        //     350.0,
-        //     game_util::Alignment::Left,
-        //     [255; 4],
-        //     32.0,
-        //     0,
-        // );
-        self.text.draw_text(
-            &format!("Yo: {}", self.soln),
-            15.0,
-            32.0,
-            game_util::Alignment::Left,
-            [0, 0, 0, 255],
-            15.0,
-            0,
-        );
-        // self.text.draw_text(
-        //     "16px",
-        //     10.0,
-        //     10.0,
-        //     game_util::Alignment::Left,
-        //     [0, 0, 0, 255],
-        //     16.0,
-        //     0,
-        // );
+        // for y in (0..20).rev() {
+        //     for x in (0..10).rev() {
+        //         self.sprite_batch.draw(
+        //             &self.sprites.plan[0],
+        //             point2(x as f32 + 9.20, y as f32 + 6.1),
+        //             [255; 4],
+        //         );
+        //     }
+        // }
 
-        // self.sprite_batch
-        //     .draw(&self.sprites.plan[1], point2(20.0, 10.0), [0xFF; 4]);
-        // self.sprite_batch
-        //     .draw(&self.sprites.plan[3], point2(20.0, 11.0), [0xFF; 4]);
-        // self.sprite_batch
-        //     .draw(&self.sprites.plan[3], point2(20.0, 12.0), [0xFF; 4]);
-        // self.sprite_batch
-        //     .draw(&self.sprites.plan[2], point2(20.0, 13.0), [0xFF; 4]);
+        if let Some(cells) = *self.cells {
+            for &(x, y, d) in &cells {
+                self.sprite_batch.draw(
+                    &self.sprites.plan[d.to_bits() as usize],
+                    point2(x as f32 + 9.20, y as f32 + 6.1),
+                    [255; 4],
+                );
+            }
+        }
 
         let (width, height): (u32, _) = self.lsize.to_physical(dpi).into();
         let (width, height) = (width as i32, height as i32);
@@ -132,7 +110,7 @@ impl game_util::Game for Game {
 
         self.text.render();
         self.sprite_batch
-            .render(Transform3D::ortho(0.0, 40.0, 0.0, 23.0, -1.0, 1.0));
+            .render(Transform3D::ortho(0.0, 54.0, 0.0, 30.05, -1.0, 1.0));
 
         self.context.swap_buffers().unwrap();
     }
@@ -141,6 +119,7 @@ impl game_util::Game for Game {
         match event {
             WindowEvent::CloseRequested => return GameloopCommand::Exit,
             WindowEvent::Resized(new_size) => {
+                println!("{:?}", new_size);
                 let psize = new_size.to_physical(self.context.window().get_hidpi_factor());
                 self.context.resize(psize);
                 self.lsize = new_size;
