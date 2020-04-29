@@ -3,6 +3,7 @@ extern crate process_memory;
 use board::Board;
 use ppt::Ppt;
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::Arc;
 
 #[cfg(windows)]
 extern crate winapi;
@@ -153,7 +154,7 @@ fn run(send: Sender<Board>) {
     }
 }
 
-fn run_window(recv: Receiver<&'static str>) {
+fn run_window(recv: Receiver<Arc<String>>) {
     use game_util::prelude::*;
     use glutin::*;
 
@@ -163,7 +164,7 @@ fn run_window(recv: Receiver<&'static str>) {
             .with_transparency(true)
             .with_always_on_top(true)
             .with_dimensions(glutin::dpi::LogicalSize::new(1280.0, 720.0))
-            .with_resizable(false),
+            .with_resizable(true),
         0,
         true,
         &mut events,
@@ -190,6 +191,8 @@ fn main() -> std::io::Result<()> {
 
     loop {
         let board = board_recv.recv().unwrap();
+        let s = Arc::new(format!("{:?}", "None").clone());
+        window_send.send(Arc::clone(&s)).unwrap();
         pcf::solve_pc(
             &board.get_queue(),
             board.get_bitboard(),
@@ -201,8 +204,10 @@ fn main() -> std::io::Result<()> {
                 if soln_vec != prev_soln {
                     prev_soln = soln_vec;
                     println!("PC: {:?}", soln);
+                    let s = Arc::new(format!("{:?}", soln).clone());
+                    window_send.send(Arc::clone(&s)).unwrap();
                 }
-                pcf::SearchStatus::Continue
+                pcf::SearchStatus::Abort
             },
         );
     }
