@@ -19,6 +19,7 @@ pub struct Game {
     sprites: sprites::Sprites,
     recv: Receiver<Arc<Option<Cells>>>,
     cells: Arc<Option<Cells>>,
+    hwnd: HWND,
 }
 
 impl Game {
@@ -26,9 +27,11 @@ impl Game {
         context: WindowedContext<PossiblyCurrent>,
         lsize: dpi::LogicalSize,
         recv: Receiver<Arc<Option<Cells>>>,
+        pid: DWORD,
     ) -> Game {
         let (sprites, sprite_sheet) = sprites::Sprites::load();
-        Game {
+        let hwnd = get_window_handle_by_process_id(pid);
+        let mut game = Game {
             context,
             lsize,
             drift: 0.0,
@@ -53,7 +56,29 @@ impl Game {
             sprites: sprites,
             recv: recv,
             cells: Arc::new(None),
-        }
+            hwnd,
+        };
+        game.adjust_size();
+        game.adjust_position();
+        game
+    }
+
+    pub fn adjust_size(&mut self) {
+        let client_rect = get_client_rect_by_window_handle(self.hwnd);
+        let new_size =
+            glutin::dpi::LogicalSize::new(client_rect.right as f64, client_rect.bottom as f64);
+
+        self.context
+            .resize(new_size.to_physical(self.context.window().get_hidpi_factor()));
+        self.context.window().set_inner_size(new_size);
+    }
+
+    pub fn adjust_position(&mut self) {
+        let pos_rect = get_window_rect_by_window_handle(self.hwnd);
+        self.context.window().set_position(glutin::dpi::LogicalPosition::new(
+            pos_rect.left as f64,
+            pos_rect.top as f64,
+        ));
     }
 }
 
@@ -138,7 +163,8 @@ use std::os::raw::c_void;
 use winapi::shared::minwindef::*;
 use winapi::shared::windef::*;
 use winapi::um::winuser::{
-    EnumWindows, GetWindow, GetClientRect, GetWindowRect, GetWindowThreadProcessId, IsWindowVisible, GW_OWNER,
+    EnumWindows, GetClientRect, GetWindow, GetWindowRect, GetWindowThreadProcessId,
+    IsWindowVisible, GW_OWNER,
 };
 
 #[derive(Debug)]
@@ -147,9 +173,7 @@ struct HandleData {
     window_handle: HWND,
 }
 
-pub fn get_client_rect_by_process_id(pid: DWORD) -> RECT {
-    let hwnd = get_window_handle_by_process_id(pid);
-
+pub fn get_client_rect_by_window_handle(hwnd: HWND) -> RECT {
     let mut rect = RECT {
         left: 0,
         top: 0,
@@ -163,9 +187,7 @@ pub fn get_client_rect_by_process_id(pid: DWORD) -> RECT {
     rect
 }
 
-pub fn get_window_rect_by_process_id(pid: DWORD) -> RECT {
-    let hwnd = get_window_handle_by_process_id(pid);
-
+pub fn get_window_rect_by_window_handle(hwnd: HWND) -> RECT {
     let mut rect = RECT {
         left: 0,
         top: 0,
@@ -178,6 +200,7 @@ pub fn get_window_rect_by_process_id(pid: DWORD) -> RECT {
     }
     rect
 }
+
 fn get_window_handle_by_process_id(pid: DWORD) -> HWND {
     let handle_data = HandleData {
         process_id: pid,

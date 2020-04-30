@@ -151,29 +151,18 @@ fn run_window(recv: Receiver<Arc<Option<Cells>>>, ppt_pid: process_memory::Pid) 
     use game_util::prelude::*;
     use glutin::*;
 
-    let client_rect = window::get_client_rect_by_process_id(ppt_pid);
     let mut events = EventsLoop::new();
     let (context, lsize) = game_util::create_context(
         WindowBuilder::new()
             .with_transparency(true)
             .with_always_on_top(true)
-            .with_dimensions(glutin::dpi::LogicalSize::new(
-                client_rect.right as f64,
-                client_rect.bottom as f64,
-            ))
             .with_resizable(true),
         0,
         true,
         &mut events,
     );
 
-    let pos_rect = window::get_window_rect_by_process_id(ppt_pid);
-    context.window().set_position(glutin::dpi::LogicalPosition::new(
-        pos_rect.left as f64,
-        pos_rect.top as f64,
-    ));
-
-    let mut game = window::Game::new(context, lsize, recv);
+    let mut game = window::Game::new(context, lsize, recv, ppt_pid);
     game_util::gameloop(&mut events, &mut game, 60.0, true);
 }
 
