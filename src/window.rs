@@ -73,7 +73,7 @@ impl game_util::Game for Game {
         GameloopCommand::Continue
     }
 
-    fn render(&mut self, alpha: f64, smooth_delta: f64) {
+    fn render(&mut self, _alpha: f64, _smooth_delta: f64) {
         let dpi = self.context.window().get_hidpi_factor();
         self.text.dpi = dpi as f32;
         self.text.screen_size = (self.lsize.width as f32, self.lsize.height as f32);
@@ -82,7 +82,7 @@ impl game_util::Game for Game {
         //     for x in (0..10).rev() {
         //         self.sprite_batch.draw(
         //             &self.sprites.plan[0],
-        //             point2(x as f32 + 9.20, y as f32 + 6.1),
+        //             point2(x as f32 + 9.1, y as f32 + 6.1),
         //             [255; 4],
         //         );
         //     }
@@ -92,7 +92,7 @@ impl game_util::Game for Game {
             for &(x, y, d) in &cells {
                 self.sprite_batch.draw(
                     &self.sprites.plan[d.to_bits() as usize],
-                    point2(x as f32 + 9.20, y as f32 + 6.1),
+                    point2(x as f32 + 9.1, y as f32 + 6.1),
                     [255; 4],
                 );
             }
@@ -113,7 +113,7 @@ impl game_util::Game for Game {
 
         self.text.render();
         self.sprite_batch
-            .render(Transform3D::ortho(0.0, 54.0, 0.0, 30.05, -1.0, 1.0));
+            .render(Transform3D::ortho(0.0, 53.5, 0.0, 30.05, -1.0, 1.0));
 
         self.context.swap_buffers().unwrap();
     }
