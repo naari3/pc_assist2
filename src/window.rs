@@ -5,6 +5,9 @@ use glutin::*;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 
+#[cfg(windows)]
+extern crate winapi;
+
 pub struct Game {
     context: WindowedContext<PossiblyCurrent>,
     lsize: dpi::LogicalSize,
@@ -128,4 +131,80 @@ impl game_util::Game for Game {
         }
         GameloopCommand::Continue
     }
+}
+
+use std::mem;
+use std::os::raw::c_void;
+use winapi::shared::minwindef::*;
+use winapi::shared::windef::*;
+use winapi::um::winuser::{
+    EnumWindows, GetWindow, GetClientRect, GetWindowRect, GetWindowThreadProcessId, IsWindowVisible, GW_OWNER,
+};
+
+#[derive(Debug)]
+struct HandleData {
+    process_id: DWORD,
+    window_handle: HWND,
+}
+
+pub fn get_client_rect_by_process_id(pid: DWORD) -> RECT {
+    let hwnd = get_window_handle_by_process_id(pid);
+
+    let mut rect = RECT {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+    };
+
+    unsafe {
+        GetClientRect(hwnd, &mut rect);
+    }
+    rect
+}
+
+pub fn get_window_rect_by_process_id(pid: DWORD) -> RECT {
+    let hwnd = get_window_handle_by_process_id(pid);
+
+    let mut rect = RECT {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+    };
+
+    unsafe {
+        GetWindowRect(hwnd, &mut rect);
+    }
+    rect
+}
+fn get_window_handle_by_process_id(pid: DWORD) -> HWND {
+    let handle_data = HandleData {
+        process_id: pid,
+        window_handle: 0 as HWND,
+    };
+
+    unsafe {
+        EnumWindows(
+            Some(enum_proc),
+            (&handle_data as *const HandleData) as LPARAM,
+        );
+    }
+
+    handle_data.window_handle
+}
+
+unsafe extern "system" fn enum_proc(hwnd: HWND, l_param: LPARAM) -> BOOL {
+    let handle_data: &mut HandleData = { mem::transmute(l_param as *mut c_void) };
+    let mut process_id: DWORD = 0;
+    GetWindowThreadProcessId(hwnd, &mut process_id);
+    if handle_data.process_id != process_id || !is_main_window(hwnd) {
+        return TRUE;
+    }
+    handle_data.window_handle = hwnd;
+    FALSE
+}
+
+unsafe fn is_main_window(hwnd: HWND) -> bool {
+    return GetWindow(hwnd, GW_OWNER) == 0 as HWND && IsWindowVisible(hwnd) != 0;
 }

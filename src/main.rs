@@ -64,14 +64,12 @@ pub fn get_pid(process_name: &str) -> process_memory::Pid {
     0
 }
 
-fn run(send: Sender<Board>) {
+fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
     use process_memory::*;
     use std::collections::HashSet;
     use std::iter::FromIterator;
 
-    let process_handler: ProcessHandle = get_pid("puyopuyotetris.exe")
-        .try_into_process_handle()
-        .unwrap();
+    let process_handler: ProcessHandle = ppt_pid.try_into_process_handle().unwrap();
     let ppt = Ppt {
         process_handle: process_handler,
     };
@@ -156,21 +154,31 @@ fn run(send: Sender<Board>) {
     }
 }
 
-fn run_window(recv: Receiver<Arc<Option<Cells>>>) {
+fn run_window(recv: Receiver<Arc<Option<Cells>>>, ppt_pid: process_memory::Pid) {
     use game_util::prelude::*;
     use glutin::*;
 
+    let client_rect = window::get_client_rect_by_process_id(ppt_pid);
     let mut events = EventsLoop::new();
     let (context, lsize) = game_util::create_context(
         WindowBuilder::new()
             .with_transparency(true)
             .with_always_on_top(true)
-            .with_dimensions(glutin::dpi::LogicalSize::new(1159.0, 622.0))
+            .with_dimensions(glutin::dpi::LogicalSize::new(
+                client_rect.right as f64,
+                client_rect.bottom as f64,
+            ))
             .with_resizable(true),
         0,
         true,
         &mut events,
     );
+
+    let pos_rect = window::get_window_rect_by_process_id(ppt_pid);
+    context.window().set_position(glutin::dpi::LogicalPosition::new(
+        pos_rect.left as f64,
+        pos_rect.top as f64,
+    ));
 
     let mut game = window::Game::new(context, lsize, recv);
     game_util::gameloop(&mut events, &mut game, 60.0, true);
@@ -182,14 +190,15 @@ include!(concat!(env!("OUT_DIR"), "/sprites.rs"));
 fn main() -> std::io::Result<()> {
     use std::thread;
 
+    let ppt_pid = get_pid("puyopuyotetris.exe");
+
     let mut prev_soln: Vec<pcf::Placement> = vec![];
 
     let (window_send, window_recv) = channel();
-
     let (board_send, board_recv) = channel();
 
-    thread::spawn(move || run_window(window_recv));
-    thread::spawn(move || run(board_send));
+    thread::spawn(move || run_window(window_recv, ppt_pid));
+    thread::spawn(move || run(board_send, ppt_pid));
 
     loop {
         let board = board_recv.recv().unwrap();
