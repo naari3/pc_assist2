@@ -82,7 +82,7 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
     };
     let mut mino_set = HashSet::<u32>::new();
     let mut preview_next_pieces: Vec<u32> = vec![];
-    let mut put_count = 0;
+    let mut _put_count = 0;
 
     let mut can_prediction = ppt.get_current_piece().is_none();
     let mut need_reset = can_prediction;
@@ -105,7 +105,7 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
                     .into_iter()
                     .copied(),
             );
-            put_count = 0;
+            _put_count = 0;
             preview_next_pieces = next_pieces.clone();
             resetted = true;
             need_reset = false;
@@ -128,12 +128,9 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
         let mut next_pieces = ppt.get_next_pieces().unwrap();
         if can_prediction {
             if next_pieces != preview_next_pieces {
-                put_count += 1;
-                match next_pieces.last() {
-                    Some(i) => {
-                        mino_set.retain(|&j| j != *i);
-                    }
-                    None => {}
+                _put_count += 1;
+                if let Some(i) = next_pieces.last() {
+                    mino_set.retain(|&j| j != *i);
                 }
             }
             preview_next_pieces = preview_next_pieces;
@@ -146,11 +143,7 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
         }
         board.next_pieces = next_pieces.clone();
 
-        board.hold = ppt.get_hold().ok();
-
         send.send(board.clone()).ok();
-
-        println!("");
     }
 }
 
@@ -200,8 +193,12 @@ fn main() -> std::io::Result<()> {
     thread::spawn(move || run_window(window_recv, ppt_pid));
     thread::spawn(move || run(board_send, ppt_pid));
 
+    let mut count = 0;
+
     loop {
         let board = board_recv.recv().unwrap();
+        count += 1;
+        println!("UPDATE {}", count);
         let s = Arc::new(None);
         window_send.send(Arc::clone(&s)).unwrap();
         pcf::solve_pc(

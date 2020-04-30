@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 process-memory = "0.3.0"
-winapi = { version = "0.3", features = ["tlhelp32", "winuser"] }
+winapi = { version = "0.3", features = ["tlhelp32", "winuser", "windef", "minwindef"] }
 pcf = { git = "https://github.com/MinusKelvin/pcf", rev = "12337b018d416e23d9d696ba9f9cb9187016b6fd" }
 game-util = { git = "https://github.com/MinusKelvin/game-util-rs", rev = "558fd0555a30f1acf46c440790b5ccbc1ade8e92" }
 enumset = "0.4.0"

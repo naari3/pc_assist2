@@ -32,9 +32,7 @@ impl PlanPlacement for Placement {
         for (x, y, _) in &mut cells {
             *y += self.kind.y() as i32 + offset_y;
             *x += self.x as i32 + offset_x;
-            println!("x: {}, y: {}", x, y);
         }
-        println!("piece x: {}, y: {}", self.x, self.kind.y());
         cells
     }
 }
@@ -130,7 +128,6 @@ impl PlanPiceState for PieceState {
                     *d = d.iter().map(Direction::ccw).collect();
                 }
             }
-            // println!("x: {}, y: {}", x, y);
         }
         cells
     }
