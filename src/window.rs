@@ -75,10 +75,12 @@ impl Game {
 
     pub fn adjust_position(&mut self) {
         let pos_rect = get_window_rect_by_window_handle(self.hwnd);
-        self.context.window().set_position(glutin::dpi::LogicalPosition::new(
-            pos_rect.left as f64,
-            pos_rect.top as f64,
-        ));
+        self.context
+            .window()
+            .set_position(glutin::dpi::LogicalPosition::new(
+                pos_rect.left as f64,
+                pos_rect.top as f64,
+            ));
     }
 }
 
@@ -151,6 +153,15 @@ impl game_util::Game for Game {
                 let psize = new_size.to_physical(self.context.window().get_hidpi_factor());
                 self.context.resize(psize);
                 self.lsize = new_size;
+            }
+            WindowEvent::MouseInput {
+                device_id: _device_id,
+                state: _element_state,
+                button: _mouse_button,
+                modifiers: _modifiers_state,
+            } => {
+                self.adjust_position();
+                self.adjust_size();
             }
             _ => {}
         }

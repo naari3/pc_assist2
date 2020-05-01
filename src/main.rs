@@ -142,6 +142,7 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
             }
         }
         board.next_pieces = next_pieces.clone();
+        board.hold = ppt.get_hold().ok();
 
         send.send(board.clone()).ok();
     }
