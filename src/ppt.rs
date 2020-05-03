@@ -6,12 +6,15 @@ pub struct Ppt {
 }
 
 impl Ppt {
-    pub fn still_active(&self) -> bool {
+    pub fn still_active(&self) -> std::io::Result<bool> {
         let mut exit_code: winapi::shared::minwindef::DWORD = 0;
-        unsafe {
+        if unsafe {
             winapi::um::processthreadsapi::GetExitCodeProcess(self.process_handle, &mut exit_code)
-        };
-        exit_code == winapi::um::minwinbase::STILL_ACTIVE
+        } == winapi::shared::minwindef::FALSE {
+            Err(std::io::Error::last_os_error())
+        } else {
+            Ok(exit_code == winapi::um::minwinbase::STILL_ACTIVE)
+        }
     }
 
     pub fn get_current_piece(&self) -> Option<u32> {

@@ -88,7 +88,7 @@ fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
     let mut need_reset = can_prediction;
     let mut resetted = !need_reset;
 
-    while ppt.still_active() {
+    while ppt.still_active().unwrap() {
         let current_piece = ppt.get_current_piece();
         if current_piece.is_none() && !need_reset && !resetted {
             can_prediction = true;

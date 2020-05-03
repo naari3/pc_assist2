@@ -64,7 +64,7 @@ impl Game {
     }
 
     pub fn adjust_size(&mut self) {
-        let client_rect = get_client_rect_by_window_handle(self.hwnd);
+        let client_rect = get_client_rect_by_window_handle(self.hwnd).unwrap();
         let new_size =
             glutin::dpi::LogicalSize::new(client_rect.right as f64, client_rect.bottom as f64);
 
@@ -74,7 +74,7 @@ impl Game {
     }
 
     pub fn adjust_position(&mut self) {
-        let pos_rect = get_window_rect_by_window_handle(self.hwnd);
+        let pos_rect = get_window_rect_by_window_handle(self.hwnd).unwrap();
         self.context
             .window()
             .set_position(glutin::dpi::LogicalPosition::new(
@@ -101,7 +101,9 @@ impl game_util::Game for Game {
         if let Some(s) = self.recv.try_recv().ok() {
             self.cells = s;
         }
-        self.context.window().set_always_on_top(self.ppt_is_active());
+        self.context
+            .window()
+            .set_always_on_top(self.ppt_is_active());
         GameloopCommand::Continue
     }
 
@@ -189,7 +191,7 @@ struct HandleData {
     window_handle: HWND,
 }
 
-pub fn get_client_rect_by_window_handle(hwnd: HWND) -> RECT {
+pub fn get_client_rect_by_window_handle(hwnd: HWND) -> std::io::Result<RECT> {
     let mut rect = RECT {
         left: 0,
         top: 0,
@@ -197,13 +199,14 @@ pub fn get_client_rect_by_window_handle(hwnd: HWND) -> RECT {
         bottom: 0,
     };
 
-    unsafe {
-        GetClientRect(hwnd, &mut rect);
+    if unsafe { GetClientRect(hwnd, &mut rect) } == FALSE {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(rect)
     }
-    rect
 }
 
-pub fn get_window_rect_by_window_handle(hwnd: HWND) -> RECT {
+pub fn get_window_rect_by_window_handle(hwnd: HWND) -> std::io::Result<RECT> {
     let mut rect = RECT {
         left: 0,
         top: 0,
@@ -211,10 +214,11 @@ pub fn get_window_rect_by_window_handle(hwnd: HWND) -> RECT {
         bottom: 0,
     };
 
-    unsafe {
-        GetWindowRect(hwnd, &mut rect);
+    if unsafe { GetWindowRect(hwnd, &mut rect) } == FALSE {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(rect)
     }
-    rect
 }
 
 fn get_window_handle_by_process_id(pid: DWORD) -> HWND {
