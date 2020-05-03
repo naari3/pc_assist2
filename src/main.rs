@@ -164,6 +164,7 @@ fn run_window(recv: Receiver<Arc<Option<Cells>>>, ppt_pid: process_memory::Pid) 
 
     let mut game = window::Game::new(context, lsize, recv, ppt_pid);
     game_util::gameloop(&mut events, &mut game, 60.0, true);
+    println!("window closed");
 }
 
 include!(concat!(env!("OUT_DIR"), "/sprites.rs"));
@@ -208,6 +209,4 @@ fn main() -> std::io::Result<()> {
             },
         );
     }
-
-    Ok(())
 }
