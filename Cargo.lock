@@ -996,10 +996,12 @@ dependencies = [
  "build-utils",
  "enumset",
  "game-util",
+ "glutin",
  "pcf",
  "process-memory",
  "regex 0.1.80",
  "winapi 0.3.8",
+ "winit",
 ]
 
 [[package]]

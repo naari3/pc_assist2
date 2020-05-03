@@ -13,6 +13,8 @@ pcf = { git = "https://github.com/MinusKelvin/pcf", rev = "12337b018d416e23d9d69
 game-util = { git = "https://github.com/MinusKelvin/game-util-rs", rev = "558fd0555a30f1acf46c440790b5ccbc1ade8e92" }
 enumset = "0.4.0"
 regex = "0.1"
+glutin = "0.21.2"
+winit = "0.19.5"
 
 [build-dependencies]
 build-utils = { git = "https://github.com/MinusKelvin/game-util-rs", rev = "558fd05" }

@@ -150,11 +150,10 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
 
 fn run_window(recv: Receiver<Arc<Option<Cells>>>, ppt_pid: process_memory::Pid) {
     use game_util::prelude::*;
-    use glutin::*;
 
-    let mut events = EventsLoop::new();
+    let mut events = glutin::EventsLoop::new();
     let (context, lsize) = game_util::create_context(
-        WindowBuilder::new()
+        glutin::WindowBuilder::new()
             .with_transparency(true)
             .with_always_on_top(true)
             .with_resizable(true),
