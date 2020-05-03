@@ -1,7 +1,7 @@
 extern crate pcf;
 extern crate process_memory;
 use crate::plan::{Cells, PlanPlacement};
-use board::Board;
+use board::{Board, BoardEvent};
 use ppt::Ppt;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
@@ -64,7 +64,7 @@ pub fn get_pid(process_name: &str) -> process_memory::Pid {
     0
 }
 
-fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
+fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
     use process_memory::*;
     use std::collections::HashSet;
     use std::iter::FromIterator;
@@ -88,7 +88,7 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
     let mut need_reset = can_prediction;
     let mut resetted = !need_reset;
 
-    loop {
+    while ppt.still_active() {
         let current_piece = ppt.get_current_piece();
         if current_piece.is_none() && !need_reset && !resetted {
             can_prediction = true;
@@ -144,8 +144,11 @@ fn run(send: Sender<Board>, ppt_pid: process_memory::Pid) {
         board.next_pieces = next_pieces.clone();
         board.hold = ppt.get_hold().ok();
 
-        send.send(board.clone()).ok();
+        send.send(BoardEvent::Continue(board.clone())).ok();
     }
+
+    println!("PPT closed");
+    send.send(BoardEvent::Exit).ok();
 }
 
 fn run_window(recv: Receiver<Arc<Option<Cells>>>, ppt_pid: process_memory::Pid) {
@@ -186,27 +189,34 @@ fn main() -> std::io::Result<()> {
     let mut count = 0;
 
     loop {
-        let board = board_recv.recv().unwrap();
-        count += 1;
-        println!("UPDATE {}", count);
-        let s = Arc::new(None);
-        window_send.send(Arc::clone(&s)).unwrap();
-        pcf::solve_pc(
-            &board.get_queue(),
-            board.get_bitboard(),
-            true,
-            true,
-            pcf::placeability::simple_srs_spins,
-            |soln| {
-                let soln_vec = soln.clone().to_vec();
-                if soln_vec != prev_soln {
-                    prev_soln = soln_vec;
-                    println!("PC: {:?}", soln);
-                    let s = Arc::new(Some(soln[0].cells().clone()));
-                    window_send.send(Arc::clone(&s)).unwrap();
-                }
-                pcf::SearchStatus::Abort
-            },
-        );
+        match board_recv.recv().unwrap() {
+            BoardEvent::Continue(board) => {
+                count += 1;
+                println!("UPDATE {}", count);
+                let s = Arc::new(None);
+                window_send.send(Arc::clone(&s)).unwrap();
+                pcf::solve_pc(
+                    &board.get_queue(),
+                    board.get_bitboard(),
+                    true,
+                    true,
+                    pcf::placeability::simple_srs_spins,
+                    |soln| {
+                        let soln_vec = soln.clone().to_vec();
+                        if soln_vec != prev_soln {
+                            prev_soln = soln_vec;
+                            println!("PC: {:?}", soln);
+                            let s = Arc::new(Some(soln[0].cells().clone()));
+                            window_send.send(Arc::clone(&s)).unwrap();
+                        }
+                        pcf::SearchStatus::Abort
+                    },
+                );
+            }
+            BoardEvent::Exit => break,
+        }
     }
+
+    println!("close");
+    Ok(())
 }

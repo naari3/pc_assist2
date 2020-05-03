@@ -33,3 +33,8 @@ impl Board {
         return pcf::BitBoard(bits);
     }
 }
+
+pub enum BoardEvent {
+    Exit,
+    Continue(Board)
+}
