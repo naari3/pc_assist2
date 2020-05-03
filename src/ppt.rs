@@ -6,6 +6,14 @@ pub struct Ppt {
 }
 
 impl Ppt {
+    pub fn still_active(&self) -> bool {
+        let mut exit_code: winapi::shared::minwindef::DWORD = 0;
+        unsafe {
+            winapi::um::processthreadsapi::GetExitCodeProcess(self.process_handle, &mut exit_code)
+        };
+        exit_code == winapi::um::minwinbase::STILL_ACTIVE
+    }
+
     pub fn get_current_piece(&self) -> Option<u32> {
         let current_piece_address = DataMember::<i32>::new_offset(
             self.process_handle,

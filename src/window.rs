@@ -82,6 +82,10 @@ impl Game {
                 pos_rect.top as f64,
             ));
     }
+
+    pub fn ppt_is_active(&self) -> bool {
+        get_foreground_window() == self.hwnd
+    }
 }
 
 include!(concat!(env!("OUT_DIR"), "/sprites.rs"));
@@ -97,6 +101,7 @@ impl game_util::Game for Game {
         if let Some(s) = self.recv.try_recv().ok() {
             self.cells = s;
         }
+        self.context.window().set_always_on_top(self.ppt_is_active());
         GameloopCommand::Continue
     }
 
@@ -241,4 +246,8 @@ unsafe extern "system" fn enum_proc(hwnd: HWND, l_param: LPARAM) -> BOOL {
 
 unsafe fn is_main_window(hwnd: HWND) -> bool {
     return GetWindow(hwnd, GW_OWNER) == 0 as HWND && IsWindowVisible(hwnd) != 0;
+}
+
+fn get_foreground_window() -> HWND {
+    unsafe { winapi::um::winuser::GetForegroundWindow() }
 }
