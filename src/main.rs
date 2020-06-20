@@ -84,18 +84,20 @@ fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
     let mut preview_next_pieces: Vec<u32> = vec![];
     let mut _put_count = 0;
 
-    let mut can_prediction = ppt.get_current_piece().is_none();
+    let mut player_index = ppt.find_player_index().unwrap();
+
+    let mut can_prediction = ppt.get_current_piece(player_index).is_none();
     let mut need_reset = can_prediction;
     let mut resetted = !need_reset;
 
     while ppt.still_active().unwrap() {
-        let current_piece = ppt.get_current_piece();
+        let current_piece = ppt.get_current_piece(player_index);
         if current_piece.is_none() && !need_reset && !resetted {
             can_prediction = true;
             need_reset = true;
         }
         if current_piece.is_none() && need_reset && !resetted {
-            let next_pieces = match ppt.get_next_pieces() {
+            let next_pieces = match ppt.get_next_pieces(player_index) {
                 Ok(i) => i,
                 Err(_e) => continue,
             };
@@ -109,6 +111,7 @@ fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
             preview_next_pieces = next_pieces.clone();
             resetted = true;
             need_reset = false;
+            player_index = ppt.find_player_index().unwrap();
         }
         if mino_set.is_empty() {
             mino_set = HashSet::<_>::from_iter(vec![0, 1, 2, 3, 4, 5, 6].into_iter());
@@ -120,12 +123,12 @@ fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
         resetted = false;
         board.current_piece = current_piece;
 
-        board.columns = match ppt.get_columns() {
+        board.columns = match ppt.get_columns(player_index) {
             Ok(v) => v,
             Err(_e) => continue,
         };
 
-        let mut next_pieces = ppt.get_next_pieces().unwrap();
+        let mut next_pieces = ppt.get_next_pieces(player_index).unwrap();
         if can_prediction {
             if next_pieces != preview_next_pieces {
                 _put_count += 1;
@@ -142,7 +145,7 @@ fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
             }
         }
         board.next_pieces = next_pieces.clone();
-        board.hold = ppt.get_hold().ok();
+        board.hold = ppt.get_hold(player_index).ok();
 
         send.send(BoardEvent::Continue(board.clone())).ok();
     }
