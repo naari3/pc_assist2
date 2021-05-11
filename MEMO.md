@@ -33,10 +33,8 @@
 
 ## 1p
 
-maybe ?
-
 ```
-"PuyoPuyoTetris2.exe"+01F17FE0 -> C
+"PuyoPuyoTetris2.exe"+01F260D0 -> 0x1CC0 (if current piece is none, there is 0x0) -> 0x8
 ```
 
 # next
