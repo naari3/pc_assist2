@@ -26,7 +26,7 @@
 ## 1p
 
 ```
-
+"PuyoPuyoTetris2.exe"+01F260D0 -> 0x1CC8 (if hold is none, there is 0x0) -> 0x8
 ```
 
 # current piece
