@@ -9,6 +9,8 @@
 4 T purple
 5 O yellow
 6 I cyan
+7 . dot
+8 __ ghost
 ```
 
 # board
