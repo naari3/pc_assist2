@@ -18,7 +18,7 @@
 ## 1p
 
 ```
-"PuyoPuyoTetris2.exe"+01F260D0 -> 0x228 -> 0x38 -> 0x0 (column each u64 array to 10 times) -> 0x10 (row each i32 to 40 times)
+"PuyoPuyoTetris2.exe"+01F260D0 -> 0x1CB8 -> 0x18 -> 0x0,0x8,0x10...0x48 (column each u64 array to 10 times) -> 0x0,0x4,0x8...0x9C (row each i32 to 40 times)
 ```
 
 # hold
