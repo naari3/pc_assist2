@@ -14,6 +14,7 @@ impl Board {
         self.hold.and_then(|i| Some(queue.insert(0, i)));
         self.current_piece.and_then(|i| Some(queue.insert(0, i)));
 
+        println!("queue: {:?}", queue);
         return queue.into_iter().map(|i| pcf::PIECES[i as usize]).collect();
     }
 
@@ -36,5 +37,5 @@ impl Board {
 
 pub enum BoardEvent {
     Exit,
-    Continue(Board)
+    Continue(Board),
 }

@@ -123,9 +123,14 @@ fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
         resetted = false;
         board.current_piece = current_piece;
 
+        println!("current_piece: {:?}", current_piece);
+
         board.columns = match ppt.get_columns(player_index) {
             Ok(v) => v,
-            Err(_e) => continue,
+            Err(e) => {
+                println!("e: {:?}", e);
+                continue;
+            }
         };
 
         let mut next_pieces = ppt.get_next_pieces(player_index).unwrap();
@@ -147,6 +152,7 @@ fn run(send: Sender<BoardEvent>, ppt_pid: process_memory::Pid) {
         board.next_pieces = next_pieces.clone();
         board.hold = ppt.get_hold(player_index).ok();
 
+        println!("sent!");
         send.send(BoardEvent::Continue(board.clone())).ok();
     }
 
@@ -179,7 +185,7 @@ include!(concat!(env!("OUT_DIR"), "/sprites.rs"));
 fn main() -> std::io::Result<()> {
     use std::thread;
 
-    let ppt_pid = get_pid("puyopuyotetris.exe");
+    let ppt_pid = get_pid("PuyoPuyoTetris2.exe");
 
     let mut prev_soln: Vec<pcf::Placement> = vec![];
 

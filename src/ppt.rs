@@ -6,6 +6,10 @@ pub struct Ppt {
 }
 
 impl Ppt {
+    fn get_base_address(&self) -> usize {
+        0x7FF7_F787_0000 // TODO: elegant fetch base address
+    }
+
     pub fn still_active(&self) -> std::io::Result<bool> {
         let mut exit_code: winapi::shared::minwindef::DWORD = 0;
         if unsafe {
@@ -19,31 +23,29 @@ impl Ppt {
     }
 
     pub fn get_current_piece(&self, index: u32) -> Option<u32> {
-        let mut offsets;
+        let offsets;
         if index == 0 {
-            offsets = vec![0x140461B20, 0x378, 0x40, 0x140, 0x110];
+            offsets = vec![self.get_base_address() + 0x01F260D0, 0x1CC0, 0x8];
         } else {
-            offsets = vec![0x1404611B8, 0x30, 0xC0, 0x18, 0x610];
+            offsets = todo!();
         }
         let current_piece_address = DataMember::<i32>::new_offset(self.process_handle, offsets);
-        let current_piece = current_piece_address.read().ok().and_then(|i| {
-            if i == -1 {
-                return None;
-            } else {
-                return Some(i as u32);
-            }
+        let current_piece = current_piece_address.read().ok().and_then(|i| match i {
+            0..=6 => Some(i as u32),
+            _ => None,
         });
         return current_piece;
     }
 
     pub fn get_columns(&self, index: u32) -> std::io::Result<Vec<Vec<i32>>> {
-        let mut offsets;
+        let offsets;
         if index == 0 {
-            offsets = vec![0x140461B20, 0x378, 0xC0, 0x10, 0x3C0, 0x18];
+            offsets = vec![self.get_base_address() + 0x01F260D0, 0x1CB8, 0x18];
         } else {
-            offsets = vec![0x1404611B8, 0x30, 0xA8, 0x3C0, 0x18];
+            offsets = todo!();
         }
-        let board_address = DataMember::<u32>::new_offset(self.process_handle, offsets);
+
+        let board_address = DataMember::<u64>::new_offset(self.process_handle, offsets);
         let mut columns_addresses = DataMember::<[u64; 10]>::new(self.process_handle);
         columns_addresses.set_offset(vec![board_address.read()? as usize]);
         let column_addrs = columns_addresses.read()?;
@@ -59,24 +61,29 @@ impl Ppt {
     }
 
     pub fn get_next_pieces(&self, index: u32) -> std::io::Result<Vec<u32>> {
-        let mut offsets;
+        let offsets;
         if index == 0 {
-            offsets = vec![0x140461B20, 0x378, 0xB8, 0x15C];
+            offsets = vec![self.get_base_address() + 0x01F260D0, 0x60, 0x98, 0x168];
         } else {
-            offsets = vec![0x1405989D0, 0x78, 0x28, 0xB8, 0x15C];
+            offsets = todo!();
         }
-        let next_pieces_address = DataMember::<[u32; 5]>::new_offset(self.process_handle, offsets);
-        let next_pieces = next_pieces_address.read()?.to_vec();
+        let next_pieces_address = DataMember::<[u64; 5]>::new_offset(self.process_handle, offsets);
+        let next_pieces = next_pieces_address
+            .read()?
+            .to_vec()
+            .iter()
+            .map(|p| (p & 0x0000FFFF) as u32)
+            .collect();
 
         return Ok(next_pieces);
     }
 
     pub fn get_hold(&self, index: u32) -> std::io::Result<u32> {
-        let mut offsets;
+        let offsets;
         if index == 0 {
-            offsets = vec![0x140598A20, 0x38, 0x3D0, 0x8];
+            offsets = vec![self.get_base_address() + 0x01F260D0, 0x1CC8, 0x8];
         } else {
-            offsets = vec![0x1405989D0, 0x270, 0x20, 0x3D0, 0x8];
+            offsets = todo!();
         }
         let hold_address = DataMember::<u32>::new_offset(self.process_handle, offsets);
         let hold = hold_address.read()?;
@@ -85,8 +92,12 @@ impl Ppt {
     }
 
     pub fn get_player_count(&self) -> std::io::Result<u32> {
-        let player_count_address =
-            DataMember::<u32>::new_offset(self.process_handle, vec![0x140473760, 0x20, 0xB4]);
+        return Ok(1);
+
+        let player_count_address = DataMember::<u32>::new_offset(
+            self.process_handle,
+            vec![self.get_base_address() + 0x01F260D0, 0x20, 0xB4],
+        );
 
         let player_count_result = player_count_address.read();
         let player_count = match player_count_result {
@@ -116,7 +127,11 @@ impl Ppt {
     pub fn get_player_steam(&self, player: u32) -> std::io::Result<u32> {
         let player_steam_address = DataMember::<u32>::new_offset(
             self.process_handle,
-            vec![0x140473760, 0x20, (0x118 + player * 0x50) as usize],
+            vec![
+                self.get_base_address() + 0x01F260D0,
+                0x20,
+                (0x118 + player * 0x50) as usize,
+            ],
         );
         let player_steam = player_steam_address.read()?;
 
