@@ -44,3 +44,11 @@
 ```
 "PuyoPuyoTetris2.exe"+01F260D0 -> 0x60 -> 0x98 -> 0x168 (each u32 and concat FFFF to 5times)  
 ```
+
+# instruction
+
+Immediately after calling SwapBuffers
+
+```
+"PuyoPuyoTetris2.exe+4B3596"
+```
