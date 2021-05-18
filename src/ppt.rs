@@ -1,5 +1,11 @@
 extern crate process_memory;
+use std::mem::MaybeUninit;
+
 use process_memory::{DataMember, Memory, ProcessHandle};
+use winapi::{
+    shared::minwindef::HMODULE,
+    um::psapi::{EnumProcessModules, GetModuleFileNameExA},
+};
 
 pub struct Ppt {
     pub process_handle: ProcessHandle,
@@ -7,7 +13,31 @@ pub struct Ppt {
 
 impl Ppt {
     fn get_base_address(&self) -> usize {
-        0x7FF7_F787_0000 // TODO: elegant fetch base address
+        unsafe {
+            let mut hmod: Vec<HMODULE> = vec![MaybeUninit::<HMODULE>::zeroed().assume_init(); 1024];
+            let mut cb_needed: u32 = 0u32;
+            if EnumProcessModules(
+                self.process_handle,
+                hmod.as_mut_ptr(),
+                std::mem::size_of::<HMODULE>() as u32,
+                &mut cb_needed as *mut _ as *mut u32,
+            ) == 0
+            {
+                panic!("Could not found")
+            }
+            let procname: Vec<u16> = vec![0u16; 20];
+
+            if GetModuleFileNameExA(
+                self.process_handle,
+                hmod[0],
+                procname.as_ptr() as *mut i8,
+                20,
+            ) == 0
+            {
+                panic!("Could not found")
+            }
+            hmod[0] as usize
+        }
     }
 
     pub fn still_active(&self) -> std::io::Result<bool> {
@@ -151,5 +181,9 @@ impl Ppt {
         }
 
         return Ok(0);
+    }
+
+    pub fn get_interact_address(&self) -> std::io::Result<u64> {
+        Ok((self.get_base_address() + 0x4B3308) as u64)
     }
 }
