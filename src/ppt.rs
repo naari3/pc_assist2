@@ -53,12 +53,11 @@ impl Ppt {
     }
 
     pub fn get_current_piece(&self, index: u32) -> Option<u32> {
-        let offsets;
-        if index == 0 {
-            offsets = vec![self.get_base_address() + 0x01F260D0, 0x1CC0, 0x8];
+        let offsets = if index == 0 {
+            vec![self.get_base_address() + 0x01F260D0, 0x1CC0, 0x8]
         } else {
-            offsets = todo!();
-        }
+            todo!()
+        };
         let current_piece_address = DataMember::<i32>::new_offset(self.process_handle, offsets);
         let current_piece = current_piece_address.read().ok().and_then(|i| match i {
             0..=6 => Some(i as u32),
@@ -68,12 +67,11 @@ impl Ppt {
     }
 
     pub fn get_columns(&self, index: u32) -> std::io::Result<Vec<Vec<i32>>> {
-        let offsets;
-        if index == 0 {
-            offsets = vec![self.get_base_address() + 0x01F260D0, 0x1CB8, 0x18];
+        let offsets = if index == 0 {
+            vec![self.get_base_address() + 0x01F260D0, 0x1CB8, 0x18]
         } else {
-            offsets = todo!();
-        }
+            todo!()
+        };
 
         let board_address = DataMember::<u64>::new_offset(self.process_handle, offsets);
         let mut columns_addresses = DataMember::<[u64; 10]>::new(self.process_handle);
@@ -91,12 +89,11 @@ impl Ppt {
     }
 
     pub fn get_next_pieces(&self, index: u32) -> std::io::Result<Vec<u32>> {
-        let offsets;
-        if index == 0 {
-            offsets = vec![self.get_base_address() + 0x01F260D0, 0x60, 0x98, 0x168];
+        let offsets = if index == 0 {
+            vec![self.get_base_address() + 0x01F260D0, 0x60, 0x98, 0x168]
         } else {
-            offsets = todo!();
-        }
+            todo!()
+        };
         let next_pieces_address = DataMember::<[u64; 5]>::new_offset(self.process_handle, offsets);
         let next_pieces = next_pieces_address
             .read()?
@@ -108,17 +105,23 @@ impl Ppt {
         return Ok(next_pieces);
     }
 
-    pub fn get_hold(&self, index: u32) -> std::io::Result<u32> {
+    pub fn get_hold(&self, index: u32) -> std::io::Result<Option<u32>> {
         let offsets;
         if index == 0 {
-            offsets = vec![self.get_base_address() + 0x01F260D0, 0x1CC8, 0x8];
+            offsets = vec![self.get_base_address() + 0x01F260D0, 0x1CC8];
         } else {
             offsets = todo!();
         }
-        let hold_address = DataMember::<u32>::new_offset(self.process_handle, offsets);
+        let hold_ptr_address = DataMember::<usize>::new_offset(self.process_handle, offsets);
+        let hold_ptr = hold_ptr_address.read()?;
+        if hold_ptr == 0 {
+            return Ok(None);
+        }
+
+        let hold_address = DataMember::<u32>::new_offset(self.process_handle, vec![hold_ptr, 0x8]);
         let hold = hold_address.read()?;
 
-        return Ok(hold);
+        return Ok(Some(hold));
     }
 
     pub fn get_player_count(&self) -> std::io::Result<u32> {
