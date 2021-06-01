@@ -29,6 +29,14 @@
 "PuyoPuyoTetris2.exe"+01F260D0 -> 0x1CC8 (if hold is none, there is 0x0) -> 0x8
 ```
 
+# hold active
+
+## 1p
+
+```
+"PuyoPuyoTetris2.exe"+01F270D0 -> 0x60 -> 0xA0 -> 0x140
+```
+
 # current piece
 
 ## 1p
@@ -47,8 +55,8 @@
 
 # instruction
 
-Immediately after calling SwapBuffers
+Immediately after calling GDI32.SwapBuffers
 
 ```
-"PuyoPuyoTetris2.exe+4B3596"
+"PuyoPuyoTetris2.exe"+4B3306
 ```
